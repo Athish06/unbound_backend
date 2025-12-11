@@ -1,36 +1,31 @@
 Architecture: The 3-Layer Defense System
----
-### 1. Layer 1 — “The Constitution” (Admin Rule Engine)
+1. Layer 1 — “The Constitution” (Admin Rule Engine)
 
-Fastest. Deterministic. Absolute.
+This is the first and fastest layer. It uses strict Regular Expression (Regex) rules defined by administrators.
 
-This layer uses strict Regex rule enforcement defined by administrators.
+How It Works
 
-How it works
+Implemented using Python re and SQLModel with PostgreSQL.
 
-Uses Python re + SQLModel (PostgreSQL).
+Matches incoming commands against stored Allow or Block patterns.
 
-Matches incoming commands against Allow or Block rules.
-
-Instant (<1ms) response time.
+Executes in under 1 millisecond.
 
 Behavior
 
-If matched with a Block rule → Command instantly rejected.
+If a command matches a Block rule, it is rejected immediately.
 
-If matched with an Allow rule → Command moves to Layer 2 for verification.
+If a command matches an Allow rule, it is forwarded to Layer 2 for verification.
 
-Prevents accidental over-permissive rules (like .*).
+Prevents accidental over-permissive rules such as .*.
 
-### 2. Layer 2 — “The Watchdog” (Token Risk Scoring Engine)
+2. Layer 2 — “The Watchdog” (Token Risk Scoring Engine)
 
-Semantic. Fast. Analytical.
-
-Commands are tokenized using shlex to understand intent rather than raw text.
+This layer performs semantic analysis by tokenizing commands using shlex to understand structure and intent.
 
 Risk Scoring Logic
 
-Each command receives a risk score:
+Each command is scored based on the following components:
 
 Component	Example	Points
 Binary Risk	ls = 0, python = 50, mkfs = 100	+0 to +100
@@ -38,70 +33,64 @@ Flag Risk	rm -f	+50
 Target Risk	/, /etc, /boot	+100
 Decision Thresholds
 
-0 Points → EXECUTE (Safe)
+0 points: Command is safe and executed.
 
-1–99 Points → ESCALATE (Go to Layer 3)
+1–99 points: Ambiguous commands are escalated to Layer 3.
 
-≥100 Points → BLOCKED
+100+ points: Command is blocked.
 
-Speed
+Performance
 
-<5ms
+Executes in under 5 milliseconds.
 
-Balanced between safety and performance.
+Designed to balance accuracy and efficiency.
 
-### 3. Layer 3 — “The Judge” (AI Context Analyzer)
+3. Layer 3 — “The Judge” (AI Context Analyzer)
 
-Smart. Context-Aware. Final Authority.
-
-Uses Google Gemini or OpenAI GPT-4o to analyze “ambiguous” commands.
+This is the final evaluation layer. It uses an LLM (Google Gemini or OpenAI GPT-4o) to analyze commands that cannot be conclusively classified by Layers 1 and 2.
 
 Responsibilities
 
-Detects obfuscated, encoded, or suspicious behavior.
+Detects obfuscated, encoded, or suspicious commands.
 
 Resolves disagreements between Layer 1 and Layer 2.
 
-Final Safe / Unsafe decision-maker.
+Provides the final Safe / Unsafe verdict.
 
-Why AI?
+Purpose of AI
 
-Humans make mistakes.
+Handles high-context decisions that Regex and heuristic scoring cannot process.
 
-Regex and heuristics cannot detect high-context attacks.
+Interprets command intent rather than relying only on patterns or tokens.
 
-AI can understand intent, not just syntax.
+Eliminates risk from human configuration mistakes.
 
 Mathematical Conflict Detection (DFA Intersection Method)
 
-Rule conflicts are detected using Finite Automata Theory — not string comparison.
+Rule conflicts are detected using Finite Automata Theory to ensure mathematical correctness, even when patterns overlap in complex ways.
 
-This ensures rule safety even in complex regex overlaps.
-
-How It Works (Step-by-Step)
+Step-by-Step Process
 1. Convert Regex to DFA
 
 Using the Greenery library:
 
-Pattern A (new rule)
+The new rule (Pattern A) is converted into a Deterministic Finite Automaton (DFA).
 
-Pattern B (existing rule)
-
-Both are converted into deterministic finite automata.
+Each existing rule (Pattern B) from the database is also converted into a DFA.
 
 2. Compute DFA Intersection
 
-Mathematically compute:
+The system calculates:
 
 Intersection = DFA(A) ∩ DFA(B)
 
 
-This machine represents all commands that both patterns match.
+The resulting DFA accepts only the strings that match both patterns.
 
 3. Analyze Intersection
 
-If empty → No conflict. Rule is safe to add.
+If the intersection is empty, the rules are disjoint and the new rule is safe to add.
 
-If not empty → Conflict exists. Rule creation is blocked.
+If the intersection is not empty, a conflict exists and the new rule is rejected.
 
-The system can also produce a counter-example, showing which command caused the conflict.
+A counter-example command can be generated to show exactly which input triggers both patterns.
